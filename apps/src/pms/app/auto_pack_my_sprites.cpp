@@ -19,7 +19,8 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
-#include <boost/filesystem/path.hpp>
+//#include <boost/filesystem/path.hpp>
+#include <boost/filesystem.hpp>
 
 #include <iostream>
 #include <regex>
@@ -201,9 +202,23 @@ parsed_command_line program_options_parser::parse( int argc, char** argv )
     result.files_bleeding =
       arguments[ "bleeding" ].as< std::vector< std::string > >();
 
-  if ( arguments.count( "dry" ) != 0 )
-    result.files_dry = arguments[ "dry" ].as< std::vector< std::string > >();
-
+  if ( arguments.count( "dry" ) != 0 ) {
+    std::string baseDir =  arguments[ "dry" ].as< std::vector< std::string > >()[0];
+    if (boost::filesystem::is_directory(baseDir)) {
+      for ( boost::filesystem::recursive_directory_iterator end, dir(baseDir); dir != end; ++dir ) {
+	if (!boost::filesystem::is_directory(*dir)) {
+          if (!dir->path().string().find(".png")) {
+            std::cerr << dir->path();
+	  } else {
+	    result.files_dry.push_back(dir->path().string());
+	  }
+        }
+//    std::cout << dir->path().filename() << "\n"; // just last bit
+     }
+   } else {
+      result.files_dry =  arguments[ "dry" ].as< std::vector< std::string > >();
+   }
+  }
   if ( result.margin >= result.canvas_size.width )
     {
       std::cerr << "The margin cannot be larger than the width.\n";
